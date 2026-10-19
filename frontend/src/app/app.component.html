@@ -1,0 +1,74 @@
+<header>
+ <a class="brand" href="/">◈ conecta<span class="brand-dot">.</span></a>
+ <nav><button [class.active]="!mine" (click)="showMine(false)">Explorar tienda</button><button [class.active]="mine" (click)="showMine(true)">Mis publicaciones</button></nav>
+ <div class="account">
+ @if(user){<span class="avatar" [title]="user.name">{{user.name[0]}}</span>@if(user.isAdmin){<button class="text-button" (click)="administration()">Miembros</button>}<button class="text-button" [disabled]="busy" (click)="logout()">Salir</button>}
+ @else{<button class="text-button" (click)="openAuth('login')">Ingresar ↗</button>}
+ <button class="primary small" (click)="publish()">＋ Publicar</button>
+ </div>
+</header>
+<main>
+ <div class="breadcrumb">COMUNIDAD PRODUCTIVA <span>/</span> SAN NICOLÁS</div>
+ <section class="hero"><div class="hero-copy"><span class="eyebrow"><i></i> UNIVERSIDAD + INDUSTRIA</span>
+ <h1>El talento nos une.<br>Las ideas nos <em>conectan.</em></h1>
+ <p>Un espacio para encontrar, ofrecer y crecer.<br>Productos y servicios de la comunidad UTN FRSN y COMIRSA.</p>
+ <button class="primary" (click)="explore()">Explorar la tienda →</button>
+ <div class="partners"><span><b>UTN<small>FRSN · Vinculación e Innovación</small></b></span><span><b>COMIRSA<small>Parque industrial</small></b></span></div></div>
+ <div class="hero-art" aria-hidden="true"><div class="orbit one"></div><div class="orbit two"></div><div class="art-label">EL VALOR DE CONECTAR</div><div class="node uni"><span class="symbol">⌘</span><b>Conocimiento</b><small>UTN FRSN</small></div><div class="node industry"><span class="symbol">▦</span><b>Producción</b><small>COMIRSA</small></div><div class="connector">↗</div><span class="floating">Ideas que se transforman en oportunidades.</span></div></section>
+ @if(notice){<p class="notice" role="status">{{notice}}</p>}
+ @if(error&&!modal&&!detail){<p class="error" role="alert">{{error}}</p>}
+ <section id="tienda"><div class="section-heading"><div><span class="eyebrow muted">HECHO EN NUESTRA COMUNIDAD</span><h2>{{mine?'Mis publicaciones':'Encontrá tu próxima oportunidad'}} <span class="count">{{items.length}}</span></h2></div><button class="text-button" (click)="publish()">Ofrecé un producto o servicio ↗</button></div>
+ @if(user){
+ <form class="search-row" (ngSubmit)="refresh()"><div class="search"><span>⌕</span><input aria-label="Buscar publicaciones" name="q" maxlength="100" [(ngModel)]="q" placeholder="¿Qué producto o servicio estás buscando?"><button class="text-button" type="submit">Buscar</button></div><label class="org-filter"><select aria-label="Comunidad" name="org" [(ngModel)]="org" (ngModelChange)="refresh()"><option value="">Ambas comunidades</option><option>UTN FRSN</option><option>COMIRSA</option></select></label></form>
+ <div class="filters"><div class="tabs">@for(t of ['','Producto','Servicio'];track t){<button [class.selected]="type===t" (click)="type=t;refresh()">{{t?t+'s':'Todo'}}</button>}</div><select aria-label="Categoría" [(ngModel)]="category" (ngModelChange)="refresh()"><option value="">Todas las categorías</option>@for(c of categories;track c){<option>{{c}}</option>}</select></div>
+ }
+ @if(loading){<div class="empty" role="status">Cargando…</div>}
+ @else if(!user){<div class="empty"><span class="symbol">◈</span><h3>Tu comunidad, más cerca.</h3><p>Ingresá o solicitá tu cuenta para participar de la tienda.</p><button class="primary" (click)="openAuth('login')">Iniciar sesión →</button> <button class="text-button inline" (click)="openAuth('register')">Solicitar cuenta</button></div>}
+ @else if(items.length===0){<div class="empty"><span class="symbol">▧</span><h3>Las próximas conexiones empiezan con vos.</h3><p>No hay publicaciones para estos filtros. Compartí lo que podés ofrecer.</p><button class="primary" (click)="publish()">Crear publicación ＋</button></div>}
+ @else{<div class="grid">@for(item of items;track item.id){<button class="card" (click)="detail=item"><div class="card-image" [class.service]="item.type==='Servicio'">@if(item.imageUrl){<img [src]="item.imageUrl" [alt]="item.title" loading="lazy">}@else{<b class="symbol">{{item.type==='Servicio'?'⌘':'▧'}}</b>}<span>{{item.type}}</span></div><div class="card-body"><small>{{item.organization}} · {{item.category}}</small><h3>{{item.title}}</h3><p>{{item.description}}</p><div class="card-bottom"><b>{{money(item.price)}}</b><span>↗</span></div></div></button>}</div>}
+ </section>
+ <section class="banner"><div class="banner-icon">◈</div><div><h3>Lo que hacés puede ser lo que alguien necesita.</h3><p>Conectá tu experiencia con nuevas oportunidades dentro de la comunidad.</p></div><button (click)="publish()">Publicar mi oferta ↗</button></section>
+</main>
+<footer><span class="brand">conecta.</span><p>UTN FRSN · Vinculación e Innovación Tecnológica <span>×</span> Parque COMIRSA</p></footer>
+@if(modal||detail){
+<div class="overlay" (keydown.escape)="close()"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><button class="close" aria-label="Cerrar" [disabled]="busy" (click)="close()">✕</button>
+@if(modal==='login'||modal==='register'){
+ <span class="eyebrow muted">UTN FRSN + COMIRSA</span><h2 id="dialog-title">{{modal==='login'?'Bienvenida a Conecta':'Sumate a la comunidad'}}</h2>
+ @if(modal==='register'){<p>Tu acceso quedará pendiente hasta que un administrador verifique tu pertenencia institucional.</p>}
+ <form #authForm="ngForm" (ngSubmit)="authenticate()">
+ @if(modal==='register'){<label>Nombre y apellido<input name="name" [(ngModel)]="credentials.name" required minlength="2" maxlength="120" autocomplete="name"></label><label>Comunidad<select name="organization" [(ngModel)]="credentials.organization"><option>UTN FRSN</option><option>COMIRSA</option></select></label>}
+ <label>Email<input name="email" type="email" email [(ngModel)]="credentials.email" required maxlength="254" autocomplete="username"></label>
+ <label>Contraseña<input name="password" type="password" [(ngModel)]="credentials.password" required [minlength]="modal==='register'?12:1" maxlength="128" [attr.autocomplete]="modal==='register'?'new-password':'current-password'"></label>
+ @if(modal==='register'){<small>Usá entre 12 y 128 caracteres.</small>}
+ <button class="primary full" [disabled]="busy||authForm.invalid">{{busy?'Procesando…':modal==='login'?'Ingresar':'Solicitar cuenta'}}</button>
+ <button type="button" class="text-button" (click)="openAuth(modal==='login'?'register':'login')">{{modal==='login'?'No tengo cuenta: registrarme':'Ya tengo cuenta'}}</button></form>
+}
+@if(modal==='listing'){
+ <span class="eyebrow muted">COMPARTÍ LO QUE HACÉS</span><h2 id="dialog-title">{{editingId?'Editar publicación':'Nueva publicación'}}</h2><p>Se publicará en nombre de {{user?.name}} · {{user?.organization}}.</p>
+ <form #listingForm="ngForm" (ngSubmit)="save()">
+ <div class="form-row"><label>Tipo<select name="type" [(ngModel)]="draft.type"><option>Producto</option><option>Servicio</option></select></label><label>Categoría<select name="category" [(ngModel)]="draft.category">@for(c of categories;track c){<option>{{c}}</option>}</select></label></div>
+ <label>Título<input name="title" required minlength="5" maxlength="100" [(ngModel)]="draft.title" placeholder="Ej.: Diseño y prototipado 3D"></label>
+ <label>Descripción<textarea name="description" required minlength="20" maxlength="3000" rows="4" [(ngModel)]="draft.description"></textarea></label>
+ <div class="form-row"><label>Precio en ARS<input name="price" type="number" min="0" max="1000000000" step="0.01" [(ngModel)]="draft.price" placeholder="Vacío = a convenir"></label><label>Email de contacto<input name="contact" type="email" email required maxlength="254" [(ngModel)]="draft.contact"></label></div>
+ <label class="upload">Imagen · JPG, PNG o WebP · hasta 1 MB<input type="file" accept="image/png,image/jpeg,image/webp" (change)="photo($event)"></label>
+ @if(draft.imageData){<img class="photo-preview" [src]="draft.imageData" alt="Vista previa de la imagen">}
+ @if(editingId||draft.imageData){<button type="button" class="text-button" (click)="draft.imageData=''">Quitar imagen</button>}
+ <button class="primary full" [disabled]="busy||listingForm.invalid">{{busy?'Guardando…':'Guardar publicación'}}</button></form>
+}
+@if(modal==='admin'){
+ <h2 id="dialog-title">Solicitudes de acceso</h2><p>Aprobá cada solicitud únicamente después de verificar su vínculo con UTN FRSN o COMIRSA.</p>
+ @if(busy){<p>Cargando…</p>}
+ @for(member of pending;track member.id){<div class="member"><b>{{member.name}}</b><p>{{member.email}} · {{member.organization}}</p><button class="primary small" [disabled]="busy" (click)="approve(member)">Aprobar acceso</button></div>}
+ @if(!busy&&pending.length===0){<p>No hay solicitudes pendientes.</p>}
+}
+@if(detail){
+ <h2 id="dialog-title">{{detail.title}}</h2>
+ @if(detail.imageUrl){<img class="detail-image" [src]="detail.imageUrl" [alt]="detail.title">}
+ <span class="eyebrow muted">{{detail.organization}} · {{detail.category}}</span><h3>{{money(detail.price)}}</h3><p class="description">{{detail.description}}</p><p>Publicado por {{detail.name}}</p>
+ <a class="primary" [href]="'mailto:'+detail.contact">Contactar al vendedor ↗</a>
+ @if(detail.ownerId===user?.id){<div class="owner-actions"><button class="text-button" (click)="publish(detail)">Editar publicación</button><button class="delete" [disabled]="busy" (click)="remove(detail)">Eliminar publicación</button></div>}
+ <small class="note">La compra y las condiciones se acuerdan directamente con quien publica.</small>
+}
+@if(error){<p class="error" role="alert">{{error}}</p>}
+</section></div>
+}
