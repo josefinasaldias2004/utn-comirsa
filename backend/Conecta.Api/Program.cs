@@ -14,8 +14,25 @@ var builder=WebApplication.CreateBuilder(args);
 // Console logging works in containers and does not require a Windows Event Log source.
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-builder.Services.AddDbContext<ConectaDb>(o=>o.UseSqlServer(builder.Configuration.GetConnectionString("Default")
- ?? throw new InvalidOperationException("Configurá ConnectionStrings__Default.")));
+var databaseProvider=builder.Configuration["Database:Provider"]
+ ?? (builder.Environment.IsDevelopment()?"Sqlite":"SqlServer");
+var connectionString=builder.Configuration.GetConnectionString("Default");
+switch(databaseProvider.ToLowerInvariant()) {
+ case "sqlite": {
+  var sqliteConnectionString=connectionString
+   ??$"Data Source={Path.Combine(builder.Environment.ContentRootPath,"conecta.local.db")}";
+  builder.Services.AddDbContext<ConectaDb>(o=>o.UseSqlite(sqliteConnectionString));
+  break;
+ }
+ case "sqlserver": {
+  var sqlServerConnectionString=connectionString
+   ??throw new InvalidOperationException("Configurá ConnectionStrings__Default.");
+  builder.Services.AddDbContext<ConectaDb>(o=>o.UseSqlServer(sqlServerConnectionString));
+  break;
+ }
+ default:
+  throw new InvalidOperationException($"Database:Provider no reconocido: {databaseProvider}.");
+}
 builder.Services.AddScoped<IPasswordHasher<Member>,PasswordHasher<Member>>();
 builder.Services.AddScoped<MemberService>(); builder.Services.AddScoped<ListingService>();
 builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(builder.Configuration["DataProtection:Path"] ?? Path.Combine(builder.Environment.ContentRootPath,"keys")));

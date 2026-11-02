@@ -1,6 +1,6 @@
 # Conecta · UTN FRSN + COMIRSA
 
-Tienda comunitaria con **Angular 20**, **ASP.NET Core 10 (C#)** y **SQL Server 2022**.
+Tienda comunitaria con **Angular 20**, **ASP.NET Core 10 (C#)**, **SQLite para desarrollo local** y **SQL Server 2022 para Docker/despliegue**.
 La interfaz permite solicitar una cuenta, ingresar, buscar productos y servicios y crear, editar o eliminar publicaciones propias. El administrador verifica la pertenencia institucional y aprueba solicitudes.
 
 ## Estructura
@@ -36,18 +36,26 @@ El comando rechaza crear otro administrador si ya existe uno; nunca promueve al 
 
 El servicio `init` crea las tablas de una base vacía usando EF Core. El SQL de `database/` es una alternativa para DBA, **no debe ejecutarse después de inicializar con EF**. No se modifica ni borra una base existente. Para futuras versiones, añadir migraciones SQL revisadas antes de desplegar; `EnsureCreated` no es un sistema de migraciones incrementales.
 
-## Desarrollo sin Docker para la aplicación
+## Desarrollo local sin Docker
 
-Requiere Node.js 24, SDK .NET 10 y una instancia SQL Server accesible.
-La base SQL puede iniciarse con `docker compose up -d sql`.
+Requiere Node.js 24 y SDK .NET 10. En `Development`, la API usa SQLite por defecto y crea `backend/Conecta.Api/conecta.local.db` al inicializar la base. No se necesita Docker ni SQL Server.
 
 ```powershell
-# Terminal del backend
-$env:ConnectionStrings__Default = "Server=localhost,1433;Database=Conecta;User Id=sa;Password=TU_CLAVE;Encrypt=True;TrustServerCertificate=True"
+# Terminal del backend, desde la raíz del repositorio
+# Si instalaste el SDK en .dotnet-local y "dotnet" no está en PATH:
+$env:PATH = "$HOME\.dotnet-local;$env:PATH"
 $env:ASPNETCORE_ENVIRONMENT = "Development"
+$env:Database__Provider = "Sqlite"
 dotnet run --project backend/Conecta.Api -- --init-db
-# Configurar Bootstrap__Email, Bootstrap__Password y Bootstrap__Organization como arriba:
+# Crear el administrador inicial (necesario para aprobar las cuentas nuevas):
+$env:Bootstrap__Email = "administracion@tu-institucion.edu.ar"
+$env:Bootstrap__Organization = "UTN FRSN"
+$secret = Read-Host "Contraseña del administrador (mínimo 12 caracteres)" -AsSecureString
+$env:Bootstrap__Password = [System.Net.NetworkCredential]::new("", $secret).Password
 dotnet run --project backend/Conecta.Api -- --seed-admin
+Remove-Item Env:Bootstrap__Password
+Remove-Item Env:Bootstrap__Email
+Remove-Item Env:Bootstrap__Organization
 dotnet run --project backend/Conecta.Api --urls http://localhost:5080
 
 # Otra terminal, desde la raíz del proyecto
@@ -55,7 +63,9 @@ npm --prefix frontend ci
 npm --prefix frontend start
 ```
 
-Abrir **http://localhost:4200**. Angular usa un proxy a `localhost:5080`; las llamadas son relativas a `/api`, sin CORS permisivo.
+Abrir **http://localhost:4200**. Angular usa un proxy a `localhost:5080`; las llamadas son relativas a `/api`, sin CORS permisivo. Ingresá como administrador para aprobar las solicitudes de acceso. La base SQLite y los datos quedan en el archivo local ignorado por Git.
+
+Para Docker, Compose selecciona explícitamente SQL Server, así que el backend conserva el mismo motor y datos del entorno de contenedores.
 
 ## Pruebas y compilación
 

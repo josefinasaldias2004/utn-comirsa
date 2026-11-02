@@ -17,6 +17,9 @@
 work/
 
 **/keys/
+**/conecta.local.db
+**/conecta.local.db-shm
+**/conecta.local.db-wal
 publish/
 
 **/out-tsc/
