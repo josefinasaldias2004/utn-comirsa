@@ -7,12 +7,14 @@ import {ApiService,Member,Listing,Draft} from './api.service';
 export class AppComponent implements OnInit {
  api=inject(ApiService);user:Member|null=null;items:Listing[]=[];pending:Member[]=[];
  categories=['Tecnología','Ingeniería','Fabricación','Capacitación','Otros'];
- q='';type='';org='';category='';mine=false;loading=true;busy=false;error='';notice='';modal:''|'login'|'register'|'listing'|'admin'='';detail:Listing|null=null;editingId?:string;
+ q='';type='';org='';category='';mine=false;loading=true;busy=false;error='';notice='';theme:'light'|'dark'='light';modal:''|'login'|'register'|'listing'|'admin'='';detail:Listing|null=null;editingId?:string;
  credentials={name:'',email:'',password:'',organization:'UTN FRSN'};
  draft:Draft=this.emptyDraft();
  private requestVersion=0;
  emptyDraft():Draft{return {title:'',description:'',type:'Producto',category:'Tecnología',price:null,contact:this.user?.email??'',imageData:null};}
- async ngOnInit(){try{await this.api.csrf();try{this.user=await this.api.me();}catch(e){if(!(e instanceof HttpErrorResponse&&e.status===401))throw e;}if(this.user)await this.refresh();}catch(e){this.fail(e);}finally{this.loading=false;}}
+ private applyTheme(){const isDark=this.theme==='dark';document.body.classList.toggle('dark',isDark);document.body.setAttribute('data-theme',this.theme);localStorage.setItem('conecta-theme',this.theme);}
+ toggleTheme(){this.theme=this.theme==='dark'?'light':'dark';this.applyTheme();}
+ async ngOnInit(){const savedTheme=localStorage.getItem('conecta-theme');if(savedTheme==='light'||savedTheme==='dark')this.theme=savedTheme;this.applyTheme();try{await this.api.csrf();try{this.user=await this.api.me();}catch(e){if(!(e instanceof HttpErrorResponse&&e.status===401))throw e;}if(this.user)await this.refresh();}catch(e){this.fail(e);}finally{this.loading=false;}}
  fail(e:unknown){this.error=e instanceof HttpErrorResponse?(e.error?.error||({401:'Iniciá sesión nuevamente.',403:'No tenés acceso a esta operación.',429:'Demasiados intentos. Esperá un minuto.'} as Record<number,string>)[e.status]||'No se pudo conectar con el servidor.'):e instanceof Error?e.message:'No se pudo completar la operación.';}
  async refresh(){const version=++this.requestVersion;this.loading=true;this.error='';try{const rows=await this.api.listings({q:this.q,type:this.type,org:this.org,category:this.category,mine:String(this.mine)});if(version===this.requestVersion)this.items=rows;}catch(e){if(version===this.requestVersion)this.fail(e);}finally{if(version===this.requestVersion)this.loading=false;}}
  openAuth(mode:'login'|'register'){this.error='';this.credentials.password='';this.modal=mode;}

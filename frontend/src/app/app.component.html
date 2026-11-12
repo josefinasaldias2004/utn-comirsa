@@ -26,6 +26,14 @@
         Ingresar ↗
       </button>
     }
+    <button
+      class="theme-toggle"
+      type="button"
+      [attr.aria-label]="theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
+      (click)="toggleTheme()"
+    >
+      {{ theme === 'dark' ? '☀' : '☾' }}
+    </button>
     <button class="primary small" (click)="publish()">＋ Publicar</button>
   </div>
 </header>
