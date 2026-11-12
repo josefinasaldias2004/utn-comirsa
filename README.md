@@ -82,7 +82,7 @@ Seis pruebas usan SQLite en memoria para aislar servicios y autenticación. La p
 
 - Registro: nombre, email, contraseña y comunidad UTN FRSN o COMIRSA.
 - Acceso pendiente hasta aprobación manual tras verificar afiliación; seleccionar la institución no prueba pertenencia.
-- Contraseñas con el hasher de ASP.NET Core; cookies HttpOnly, SameSite, caducidad de 8 horas, CSRF en todas las mutaciones y límite de intentos.
+- Contraseñas con el hasher de ASP.NET Core; cookies HttpOnly, SameSite, caducidad de 8 horas, CSRF en todas las mutaciones, límite de intentos y encabezados de seguridad HTTP (CSP, anti-clickjacking, MIME y política de referencia).
 - La organización de un aviso se obtiene del propietario autenticado, nunca del formulario.
 - Alta, edición y baja autorizadas en el servidor; un miembro no puede modificar avisos ajenos.
 - Precio decimal en ARS; vacío significa “a convenir”.

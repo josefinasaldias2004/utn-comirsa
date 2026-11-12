@@ -30,6 +30,17 @@ public sealed class ApiFactory : WebApplicationFactory<Program> {
  protected override void Dispose(bool disposing){base.Dispose(disposing);if(disposing)connection.Dispose();}
 }
 public class AuthTests {
+ [Fact] public async Task Security_headers_are_applied_to_api_responses() {
+  using var factory=new ApiFactory();await factory.Initialize();
+  using var client=factory.CreateClient();
+  var response=await client.GetAsync("/api/health");
+  Assert.Equal("nosniff",response.Headers.GetValues("X-Content-Type-Options").Single());
+  Assert.Equal("DENY",response.Headers.GetValues("X-Frame-Options").Single());
+  Assert.Equal("strict-origin-when-cross-origin",response.Headers.GetValues("Referrer-Policy").Single());
+  Assert.Equal("camera=(), microphone=(), geolocation=()",response.Headers.GetValues("Permissions-Policy").Single());
+  Assert.Equal("default-src 'none'; base-uri 'none'; frame-ancestors 'none'",response.Headers.GetValues("Content-Security-Policy").Single());
+ }
+
  [Fact] public async Task Protected_routes_and_csrf_are_enforced() {
   using var factory=new ApiFactory();await factory.Initialize();
   using var client=factory.CreateClient(new WebApplicationFactoryClientOptions{AllowAutoRedirect=false});

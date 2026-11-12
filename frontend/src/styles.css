@@ -258,3 +258,5 @@ body.dark .close:hover{background:#26372a}
 body.dark .upload{background:#101713;border-color:#344438}
 body.dark .photo-preview,body.dark .detail-image{background:#121a15}
 body.dark .member{border-color:#28332b}
+.skip-link{position:fixed;top:8px;left:8px;z-index:20;padding:10px 14px;transform:translateY(-150%);border-radius:8px;background:var(--button);color:var(--button-text);font-weight:700}
+.skip-link:focus{transform:translateY(0)}

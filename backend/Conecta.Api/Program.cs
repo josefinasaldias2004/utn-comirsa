@@ -64,6 +64,17 @@ if (args.Contains("--init-db") || args.Contains("--seed-admin")) {
  return;
 }
 app.Use(async(ctx,next)=>{
+ ctx.Response.Headers["X-Content-Type-Options"]="nosniff";
+ ctx.Response.Headers["X-Frame-Options"]="DENY";
+ ctx.Response.Headers["Referrer-Policy"]="strict-origin-when-cross-origin";
+ ctx.Response.Headers["Permissions-Policy"]="camera=(), microphone=(), geolocation=()";
+ if (!app.Environment.IsDevelopment() && ctx.Request.IsHttps)
+  ctx.Response.Headers["Strict-Transport-Security"]="max-age=31536000";
+ if (ctx.Request.Path.StartsWithSegments("/api"))
+  ctx.Response.Headers["Content-Security-Policy"]="default-src 'none'; base-uri 'none'; frame-ancestors 'none'";
+ await next();
+});
+app.Use(async(ctx,next)=>{
  try { await next(); }
  catch (BusinessException e) { ctx.Response.StatusCode=e.Status; await ctx.Response.WriteAsJsonAsync(new {error=e.Message}); }
  catch (AntiforgeryValidationException) { ctx.Response.StatusCode=400;await ctx.Response.WriteAsJsonAsync(new {error="La sesión del formulario venció. Recargá la página."}); }
@@ -71,7 +82,6 @@ app.Use(async(ctx,next)=>{
 });
 app.UseAuthentication();app.UseAuthorization();app.UseRateLimiter();
 app.Use(async(ctx,next)=>{
- ctx.Response.Headers["X-Content-Type-Options"]="nosniff";
  if (ctx.Request.Path.StartsWithSegments("/api")) {
   ctx.Response.Headers.CacheControl="no-store";
   if (ctx.Request.Method is "POST" or "PUT" or "PATCH" or "DELETE") await ctx.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(ctx);
